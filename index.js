@@ -2,15 +2,19 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
+const PORT = process.env.PORT || 10000;
+
 app.use(cors());
+app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+console.log("🔥 APP INICIANDO");
 
-// Ruta raíz (para Render / salud)
+// Ruta raíz (health / prueba)
 app.get("/", (req, res) => {
-  res.send("MCP Server activo 🧠🦴");
+  res.send("Servidor MCP activo ✅");
 });
 
+// Ruta MCP (SSE)
 app.get("/mcp", (req, res) => {
   res.status(200);
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -19,12 +23,13 @@ app.get("/mcp", (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
 
   res.flushHeaders();
-  console.log("Cliente MCP conectado");
 
-  // Mensaje inmediato (clave para evitar timeout)
-  res.write(`event: ready\ndata: connected\n\n`);
+  console.log("🧠 Cliente MCP conectado");
 
-  // Evento real: cargar fémur
+  // Evento inmediato (evita timeout)
+  res.write(`event: ready\ndata: MCP conectado correctamente\n\n`);
+
+  // Evento inicial
   res.write(
     `event: load_model\ndata: ${JSON.stringify({
       modelo: "femur",
@@ -33,30 +38,19 @@ app.get("/mcp", (req, res) => {
     })}\n\n`
   );
 
-  // Mantener viva la conexión
-  const keepAlive = setInterval(() => {
+  // Ping cada 15 segundos
+  const pingInterval = setInterval(() => {
     res.write(`event: ping\ndata: ${Date.now()}\n\n`);
   }, 15000);
 
+  // Cleanup
   req.on("close", () => {
-    clearInterval(keepAlive);
-    console.log("Cliente MCP desconectado");
-    res.end();
+    clearInterval(pingInterval);
+    console.log("❌ Cliente MCP desconectado");
   });
 });
 
-  // Ping para mantener viva la conexión
-  const keepAlive = setInterval(() => {
-    res.write(`event: ping\ndata: ${Date.now()}\n\n`);
-  }, 15000);
-
-  req.on("close", () => {
-    clearInterval(keepAlive);
-    console.log("Cliente MCP desconectado");
-    res.end();
-  });
-});
-
+// Arranque del servidor
 app.listen(PORT, () => {
-  console.log(`Servidor MCP corriendo en puerto ${PORT}`);
+  console.log(`✅ Servidor MCP corriendo en puerto ${PORT}`);
 });
