@@ -11,16 +11,20 @@ app.get("/", (req, res) => {
   res.send("MCP Server activo 🧠🦴");
 });
 
-// Ruta MCP (SSE)
 app.get("/mcp", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.status(200);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
+  res.setHeader("X-Accel-Buffering", "no");
 
+  res.flushHeaders();
   console.log("Cliente MCP conectado");
 
-  // Evento inicial: cargar fémur
+  // Mensaje inmediato (clave para evitar timeout)
+  res.write(`event: ready\ndata: connected\n\n`);
+
+  // Evento real: cargar fémur
   res.write(
     `event: load_model\ndata: ${JSON.stringify({
       modelo: "femur",
@@ -28,6 +32,18 @@ app.get("/mcp", (req, res) => {
       vista: "anatomica"
     })}\n\n`
   );
+
+  // Mantener viva la conexión
+  const keepAlive = setInterval(() => {
+    res.write(`event: ping\ndata: ${Date.now()}\n\n`);
+  }, 15000);
+
+  req.on("close", () => {
+    clearInterval(keepAlive);
+    console.log("Cliente MCP desconectado");
+    res.end();
+  });
+});
 
   // Ping para mantener viva la conexión
   const keepAlive = setInterval(() => {
