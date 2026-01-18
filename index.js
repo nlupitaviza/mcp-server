@@ -7,6 +7,23 @@ app.use(cors());
 app.get("/", (req, res) => {
   res.send("MCP Server activo 🧠🦴");
 });
+app.get("/mcp", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  res.write(`data: MCP conectado correctamente\n\n`);
+
+  const interval = setInterval(() => {
+    res.write(`data: ping ${new Date().toISOString()}\n\n`);
+  }, 3000);
+
+  req.on("close", () => {
+    clearInterval(interval);
+    res.end();
+  });
+});
+
 
 // Endpoint MCP (SSE)
 app.get("/mcp", (req, res) => {
